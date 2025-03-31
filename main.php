@@ -17,7 +17,7 @@ try {
 
 // Função para enviar mensagem via WhatsApp
 function enviarMensagemWhatsApp($idUsuario, $telefone, $mensagem) {
-    $url = "http://localhost:3001/send-message";  // Endpoint do backend Node.js
+    $url = "http://69.62.94.121:3001/send-message";  // Endpoint do backend Node.js
 
     $data = [
         "userId" => $idUsuario,
@@ -36,6 +36,25 @@ function enviarMensagemWhatsApp($idUsuario, $telefone, $mensagem) {
 
     $response = curl_exec($ch);
     curl_close($ch);
+
+
+    $data2 = [
+        "userId" => $idUsuario,
+        "phone" => "55".$telefone . "@c.us",
+        "message" => "b068488e-56e7-45aa-9241-094003ca6522"
+    ];
+
+    $ch2 = curl_init();
+    curl_setopt($ch2, CURLOPT_URL, $url);
+    curl_setopt($ch2, CURLOPT_POST, true);
+    curl_setopt($ch2, CURLOPT_POSTFIELDS, json_encode($data2));
+    curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch2, CURLOPT_HTTPHEADER, [
+        "Content-Type: application/json"
+    ]);
+
+    $response = curl_exec($ch2);
+    curl_close($ch2);
 
     if ($response) {
         $decodedResponse = json_decode($response, true);
@@ -69,7 +88,6 @@ if ($stmt->rowCount() > 0) {
         $chavePix = "b068488e-56e7-45aa-9241-094003ca6522";
         // Envia a mensagem via WhatsApp
         enviarMensagemWhatsApp($idUsuario,$telefone, $mensagem);
-        enviarMensagemWhatsApp($idUsuario,$telefone, $chavePix);
     }
 } else {
     echo "Nenhum empréstimo vencido encontrado.\n";

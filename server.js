@@ -8,6 +8,7 @@ const QRCode = require("qrcode");
 const cors = require("cors");
 const os = require("os");
 const axios = require("axios");
+const rimraf = require('rimraf');
 
 const app = express();
 const server = http.createServer(app);
@@ -42,7 +43,16 @@ io.on("connection", (socket) => {
 
     socket.on("disconnect", () => console.log("Cliente desconectado:", socket.id));
 });
-
+function removeSessionDirectory(userId) {
+    const sessionDir = path.join(SESSIONS_DIR, userId);
+    rimraf(sessionDir, (err) => {
+        if (err) {
+            console.error("Erro ao excluir diretório de sessão:", err);
+        } else {
+            console.log(`Sessão de ${userId} removida com sucesso.`);
+        }
+    });
+}
 function startSession(userId, socket = null) {
     const client = new Client({
         authStrategy: new LocalAuth({ clientId: userId, dataPath: path.join(SESSIONS_DIR, userId) }),
@@ -72,13 +82,29 @@ function startSession(userId, socket = null) {
 app.get("/chats/:userId", async (req, res) => {
     const client = clients[req.params.userId];
     if (!client) return res.status(400).json({ error: "Sessão não encontrada" });
+
+    // Verificar se a sessão está pronta
+    if (!client.isReady) {
+        return res.status(400).json({ error: "Sessão não está pronta" });
+    }
+
     try {
         const chats = await client.getChats();
         res.json(chats.map(chat => ({ id: chat.id._serialized, name: chat.name || chat.id.user })));
     } catch (error) {
-        res.status(500).json({ error: "Erro ao carregar chats" });
+        console.error(`Erro ao carregar chats para ${req.params.userId}:`, error);
+        removeSessionDirectory(req.params.userId);
+
+        const socket = io.sockets.sockets.get(req.socket);
+        if (socket) {
+            console.log(`🔄 Reiniciando sessão para ${req.params.userId}...`);
+            startSession(req.params.userId, socket);
+        }
+
+        res.status(500).json({ error: "Erro ao carregar chats. Sessão reiniciada, escaneie o QR Code novamente." });
     }
 });
+
 
 app.get("/messages/:userId/:chatId", async (req, res) => {
     const client = clients[req.params.userId];
