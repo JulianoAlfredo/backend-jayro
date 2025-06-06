@@ -20,13 +20,10 @@ const ASAAS_BASE_URL = "https://www.asaas.com/api/v3";
 
 
 
-const options = {
-    key: fs.readFileSync("/etc/letsencrypt/live/jayrobackend.com.br/privkey.pem"),
-    cert: fs.readFileSync("/etc/letsencrypt/live/jayrobackend.com.br/fullchain.pem")
-};
+
 
 const app = express();
-const server = https.createServer(options, app); // Alterado para HTTPS
+const server = https.createServer(app); // Alterado para HTTPS
 const io = new Server(server, {
     cors: {
         origin: "*",
